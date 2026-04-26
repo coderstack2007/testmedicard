@@ -10,7 +10,7 @@ use App\Http\Controllers\Api\V1\DoctorController;
 use App\Http\Controllers\Api\V1\MessageController;
 use App\Http\Controllers\Api\V1\PatientController;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\Api\V1\UserController;
 Route::prefix('v1')->group(function () {
 
     // Public auth routes
@@ -35,17 +35,20 @@ Route::prefix('v1')->group(function () {
         Route::put('branches/{id}', [BranchController::class, 'update'])->middleware('role:absolute_admin');
 
         // Departments
+        Route::get('departments/{id}', [DepartmentController::class, 'show']);
         Route::get('branches/{branchId}/departments', [DepartmentController::class, 'index']);
         Route::post('branches/{branchId}/departments', [DepartmentController::class, 'store'])->middleware('role:moderator,absolute_admin');
         Route::put('departments/{id}', [DepartmentController::class, 'update'])->middleware('role:moderator,absolute_admin');
         Route::delete('departments/{id}', [DepartmentController::class, 'destroy'])->middleware('role:moderator,absolute_admin');
+        Route::get('departments/{id}', [DepartmentController::class, 'show']);
 
         // Doctors
         Route::get('branches/{branchId}/doctors', [DoctorController::class, 'index']);
         Route::post('doctors', [DoctorController::class, 'store'])->middleware('role:moderator,absolute_admin');
         Route::put('doctors/{id}', [DoctorController::class, 'update'])->middleware('role:moderator,absolute_admin');
         Route::delete('doctors/{id}', [DoctorController::class, 'destroy'])->middleware('role:moderator,absolute_admin');
-
+        Route::get('doctors/{id}', [DoctorController::class, 'show']);
+        
         // Patients
         Route::get('patients', [PatientController::class, 'index'])->middleware('role:moderator,absolute_admin');
         Route::get('patients/{id}', [PatientController::class, 'show']);
@@ -70,6 +73,8 @@ Route::prefix('v1')->group(function () {
 
         // Dashboard
         Route::get('dashboard', [DashboardController::class, 'index']);
+        Route::post('users', [UserController::class, 'store'])
+            ->middleware('role:moderator,absolute_admin');
     });
 });
 

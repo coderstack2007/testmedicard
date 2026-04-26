@@ -38,7 +38,7 @@ class DepartmentController
 
     public function show(Request $request, int $id)
     {
-        $department = Department::findOrFail($id);
+        $department = Department::with('branch')->findOrFail($id); 
         $this->assertBranchAccess($department->branch_id);
 
         return response()->json(new DepartmentResource($department));

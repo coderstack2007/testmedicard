@@ -16,6 +16,7 @@ class StoreBranchRequest extends FormRequest
         return [
             'name'         => 'required|string|max:255',
             'address'      => 'nullable|string',
+            'code'         => 'required|string|unique:branches,code',
             'moderator_id' => 'nullable|exists:users,id',
             'is_active'    => 'boolean',
         ];
@@ -25,6 +26,7 @@ class StoreBranchRequest extends FormRequest
     {
         return [
             'name.required' => 'Branch name is required',
+            'code.unique' => 'Branch code must be unique',  
             'moderator_id.exists' => 'Selected moderator does not exist',
         ];
     }
