@@ -50,13 +50,17 @@ class BranchController
         return response()->json(new BranchResource($branch->load('moderator', 'departments')));
     }
 
-    public function destroy(Request $request, int $id)
+    public function destroy(int $id)
     {
-        $this->assertBranchAccess($id);
-
-        $branch = Branch::findOrFail($id);
+        $branch = Branch::withCount('departments')->findOrFail($id);
+        
+        if ($branch->departments_count > 0) {
+            return response()->json([
+                'message' => 'Cannot delete: branch has departments. Remove all departments first.'
+            ], 422);
+        }
+        
         $branch->delete();
-
-        return response()->json(['message' => 'Branch deleted successfully']);
+        return response()->json(['message' => 'Branch deleted']);
     }
 }

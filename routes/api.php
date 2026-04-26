@@ -33,7 +33,7 @@ Route::prefix('v1')->group(function () {
         Route::post('branches', [BranchController::class, 'store'])->middleware('role:absolute_admin');
         Route::get('branches/{id}', [BranchController::class, 'show']);
         Route::put('branches/{id}', [BranchController::class, 'update'])->middleware('role:absolute_admin');
-
+        Route::delete('branches/{id}', [BranchController::class, 'destroy'])->middleware('role:moderator,absolute_admin');
         // Departments
         Route::get('departments/{id}', [DepartmentController::class, 'show']);
         Route::get('branches/{branchId}/departments', [DepartmentController::class, 'index']);

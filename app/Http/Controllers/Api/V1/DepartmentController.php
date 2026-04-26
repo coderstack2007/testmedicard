@@ -55,12 +55,15 @@ class DepartmentController
     }
 
     public function destroy(Request $request, int $id)
-    {
-        $department = Department::findOrFail($id);
-        $this->assertBranchAccess($department->branch_id);
-
-        $department->delete();
-
-        return response()->json(['message' => 'Department deleted']);
+{
+    $department = Department::withCount('doctors')->findOrFail($id);
+    $this->assertBranchAccess($department->branch_id);
+    
+    if ($department->doctors_count > 0) {
+        return response()->json(['message' => 'Cannot delete: department has doctors'], 422);
     }
+    
+    $department->delete();
+    return response()->json(['message' => 'Department deleted']);
+}
 }
