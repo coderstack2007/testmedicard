@@ -31,7 +31,7 @@
             Add Department
           </BaseButton>
         </div>
-
+    
         <LoadingSpinner v-if="isDeptLoading" message="Loading departments..." />
 
         <template v-else>
@@ -55,11 +55,27 @@
           </div>
         </template>
       </div>
-
-      <div v-else class="not-found">
-        <AlertCircle :size="48" />
-        <p>Branch not found</p>
+  <div class="actions" v-if="canManage">
+        <BaseButton variant="danger" @click="confirmDelete">
+          <Trash2 :size="16" /> Delete Branch
+        </BaseButton>
       </div>
+
+      <!-- Delete Modal — перед закрывающим </template> -->
+      <BaseModal v-if="showDeleteModal" :open="showDeleteModal" @close="showDeleteModal = false" title="Delete Branch">
+        <div class="modal-form">
+          <div v-if="deleteError" class="error-box">{{ deleteError }}</div>
+          <p v-else>Are you sure you want to delete <strong>{{ branch?.name }}</strong>?</p>
+          <div class="modal-actions">
+            <BaseButton variant="ghost" @click="showDeleteModal = false">Cancel</BaseButton>
+            <BaseButton v-if="!deleteError" variant="danger" @click="handleDelete">Delete</BaseButton>
+          </div>
+        </div>
+      </BaseModal>
+        <div v-else class="not-found">
+          <AlertCircle :size="48" />
+          <p>Branch not found</p>
+        </div>
     </div>
 
     <!-- Create Department Modal -->
@@ -91,7 +107,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed  } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import * as branchesApi from '@/api/branches'
 import * as departmentsApi from '@/api/departments'
@@ -102,12 +118,15 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
-import { ChevronLeft, AlertCircle, Plus, Building2 } from 'lucide-vue-next'
+import { ChevronLeft, AlertCircle, Plus, Building2 , Trash2 } from 'lucide-vue-next'
 import type { Branch, Department } from '@/types'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
 const branchId = parseInt(route.params.id as string)
+const showDeleteModal = ref(false)
+const deleteError = ref('')
 
 const branch = ref<Branch | null>(null)
 const departments = ref<Department[]>([])
@@ -167,6 +186,27 @@ const fetchDepartments = async () => {
   }
 }
 
+const confirmDelete = () => {
+  deleteError.value = ''
+  if (departments.value.length > 0) {
+    deleteError.value = `Cannot delete: branch has ${departments.value.length} department(s). Remove all departments first.`
+  }
+  showDeleteModal.value = true
+}
+
+const handleDelete = async () => {
+  try {
+    await branchesApi.deleteBranch(branchId)
+    router.push('/branches')
+  } catch (error: any) {
+    deleteError.value = error.response?.data?.message || error.message || 'Error deleting'
+  }
+}
+
+const auth = useAuthStore()
+const canManage = computed(() =>
+  ['moderator', 'absolute_admin'].includes(auth.user?.role ?? '')
+)
 onMounted(async () => {
   try {
     const response = await branchesApi.getBranch(branchId)
@@ -179,6 +219,7 @@ onMounted(async () => {
 
   await fetchDepartments()
 })
+
 </script>
 
 <style scoped>

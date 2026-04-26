@@ -20,3 +20,8 @@ export const updateBranch = async (id: number, data: Partial<Branch>) => {
   const response = await client.put<{ data: Branch }>(`/branches/${id}`, data)
   return response
 }
+
+// branches.ts
+export const deleteBranch = async (id: number) => {
+  await client.delete(`/branches/${id}`)
+}

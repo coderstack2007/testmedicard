@@ -9,10 +9,7 @@ defineEmits<{
 <template>
   <header class="app-header">
     <div class="header-left">
-      <div class="search-box">
-        <Search size="18" />
-        <input type="text" placeholder="Search..." />
-      </div>
+      
     </div>
 
     <div class="header-right">
