@@ -1,5 +1,5 @@
 <template>
-  <AppLayout>
+
     <div class="page-container">
       <router-link to="/branches" class="back-link">
         <ChevronLeft :size="18" />
@@ -19,12 +19,7 @@
               <span class="label">Address</span>
               <span class="value">{{ branch.address || '—' }}</span>
             </div>
-            <div class="info-item">
-              <span class="label">Status</span>
-              <BaseBadge :variant="branch.is_active ? 'success' : 'danger'">
-                {{ branch.is_active ? 'Active' : 'Inactive' }}
-              </BaseBadge>
-            </div>
+          
           </div>
         </BaseCard>
 
@@ -39,23 +34,26 @@
 
         <LoadingSpinner v-if="isDeptLoading" message="Loading departments..." />
 
-        <div v-else-if="departments.length > 0" class="departments-grid">
-          <BaseCard
-            v-for="dept in departments"
-            :key="dept.id"
-            class="dept-card"
-          >
-            <div class="dept-header">
-              <h3>{{ dept.name }}</h3>
+        <template v-else>
+          <div v-if="departments.length > 0" class="departments-grid">
+            <div
+              v-for="dept in departments"
+              :key="dept.id"
+              class="dept-card"
+              @click="router.push(`/departments/${dept.id}`)"
+            >
+              <div class="dept-header">
+                <h3>{{ dept.name }}</h3>
+              </div>
+              <p class="dept-description">{{ dept.description || 'No description' }}</p>
             </div>
-            <p class="dept-description">{{ dept.description || 'No description' }}</p>
-          </BaseCard>
-        </div>
+          </div>
 
-        <div v-else class="empty-state">
-          <Building2 :size="48" />
-          <p>No departments found</p>
-        </div>
+          <div v-else class="empty-state">
+            <Building2 :size="48" />
+            <p>No departments found</p>
+          </div>
+        </template>
       </div>
 
       <div v-else class="not-found">
@@ -89,12 +87,12 @@
         </div>
       </form>
     </BaseModal>
-  </AppLayout>
+
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import * as branchesApi from '@/api/branches'
 import * as departmentsApi from '@/api/departments'
 
@@ -108,6 +106,7 @@ import { ChevronLeft, AlertCircle, Plus, Building2 } from 'lucide-vue-next'
 import type { Branch, Department } from '@/types'
 
 const route = useRoute()
+const router = useRouter()
 const branchId = parseInt(route.params.id as string)
 
 const branch = ref<Branch | null>(null)
@@ -121,6 +120,7 @@ const formError = ref('')
 const formData = ref({
   name: '',
   description: '',
+  
 })
 
 const openCreateDepartment = () => {
@@ -130,8 +130,6 @@ const openCreateDepartment = () => {
 }
 
 const handleSubmit = async () => {
-  console.log('📋 Dept formData:', formData.value)
-
   if (!formData.value.name.trim()) {
     formError.value = 'Department name is required'
     return
@@ -141,13 +139,11 @@ const handleSubmit = async () => {
   formError.value = ''
 
   try {
-    console.log('🚀 Creating department for branch:', branchId)
     const result = await departmentsApi.createDepartment(branchId, formData.value)
     console.log('✅ Department created:', result)
     showModal.value = false
     await fetchDepartments()
   } catch (error: any) {
-    console.error('❌ Create dept error:', error.response?.data)
     formError.value =
       error.response?.data?.message ||
       error.response?.data?.error ||
@@ -161,9 +157,7 @@ const handleSubmit = async () => {
 const fetchDepartments = async () => {
   isDeptLoading.value = true
   try {
-    console.log('🚀 Fetching departments for branch:', branchId)
     const response = await departmentsApi.getDepartments(branchId)
-    console.log('✅ Departments response:', response)
     departments.value = response.data?.data || response.data || []
   } catch (error) {
     console.error('❌ Error fetching departments:', error)
@@ -176,7 +170,6 @@ const fetchDepartments = async () => {
 onMounted(async () => {
   try {
     const response = await branchesApi.getBranch(branchId)
-    console.log('✅ Branch response:', response)
     branch.value = response.data?.data || response.data || response
   } catch (error) {
     console.error('❌ Error fetching branch:', error)
@@ -211,12 +204,6 @@ onMounted(async () => {
 .branch-detail {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
-}
-
-.detail-header {
-  display: flex;
-  align-items: center;
   gap: var(--space-lg);
 }
 
@@ -266,6 +253,21 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: var(--space-lg);
+}
+
+.dept-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: var(--space-lg);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.dept-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-card);
+  transform: translateY(-2px);
 }
 
 .dept-header {

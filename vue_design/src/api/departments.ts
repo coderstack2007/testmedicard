@@ -10,7 +10,7 @@ export const getDepartments = async (branchId: number) => {
 export const getDepartment = async (id: number) => {
   const response = await client.get<{ data: Department }>(`/departments/${id}`)
   console.log('📡 getDepartment raw:', response.data)
-  return response.data.data
+  return response.data.data ?? response.data
 }
 
 export const createDepartment = async (branchId: number, data: { name: string; description?: string }) => {

@@ -34,12 +34,17 @@ const routes = [
         component: () => import('@/pages/branches/BranchDetailPage.vue')
       },
       {
-        path: 'departments/:branchId',
+        path: 'departments/:id',
         component: () => import('@/pages/departments/DepartmentPage.vue')
       },
       {
         path: 'doctors',
         component: () => import('@/pages/doctors/DoctorListPage.vue')
+      },
+      {
+        path: '/doctors/:id',
+        name: 'DoctorProfile',
+        component: () => import('@/pages/doctors/DoctorProfile.vue'),
       },
       {
         path: 'patients',
@@ -61,6 +66,10 @@ const routes = [
       {
         path: 'chats/:id',
         component: () => import('@/pages/chat/ChatRoomPage.vue')
+      },
+      {
+        path: 'departments/:id',
+        component: () => import('@/pages/departments/DepartmentDetailPage.vue')
       }
     ]
   },

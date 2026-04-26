@@ -1,14 +1,31 @@
 import client from './client'
-import type { User, DoctorProfile, PaginatedResponse } from '@/types'
 
-export const getDoctors = (branchId: number, params?: Record<string, any>) =>
-  client.get<PaginatedResponse<User>>(`/branches/${branchId}/doctors`, { params })
+export const getDoctors = async (branchId: number) => {
+  const response = await client.get(`/branches/${branchId}/doctors`)
+  return response
+}
 
-export const createDoctor = (data: Partial<DoctorProfile>) =>
-  client.post<{ data: DoctorProfile }>('/doctors', data)
+export const createDoctor = async (data: {
+  user_id: number
+  branch_id: number | string
+  department_id: number | string
+  specialization?: string
+  phone?: string
+}) => {
+  const response = await client.post('/doctors', data)
+  return response.data
+}
 
-export const updateDoctor = (id: number, data: Partial<DoctorProfile>) =>
-  client.put<{ data: DoctorProfile }>(`/doctors/${id}`, data)
+export const getDoctor = async (id: number) => {
+  const response = await client.get(`/doctors/${id}`)
+  return response.data
+}
 
-export const deleteDoctor = (id: number) =>
-  client.delete(`/doctors/${id}`)
+export const updateDoctor = async (id: number, data: any) => {
+  const response = await client.put(`/doctors/${id}`, data)
+  return response.data
+}
+
+export const deleteDoctor = async (id: number) => {
+  await client.delete(`/doctors/${id}`)
+}

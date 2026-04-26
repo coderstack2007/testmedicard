@@ -1,5 +1,5 @@
 <template>
-  <AppLayout>
+
     <div class="page-container">
       <div class="page-header">
         <h1>Branches</h1>
@@ -67,7 +67,7 @@
         </form>
       </BaseModal>
     </div>
-  </AppLayout>
+
 </template>
 
 <script setup lang="ts">
