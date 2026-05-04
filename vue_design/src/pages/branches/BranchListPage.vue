@@ -66,6 +66,33 @@
           </div>
         </form>
       </BaseModal>
+      <div v-if="lastPage > 1" class="pagination">
+  <BaseButton
+    variant="ghost"
+    :disabled="currentPage === 1"
+    @click="fetchBranches(currentPage - 1)"
+  >
+    ← Prev
+  </BaseButton>
+
+  <button
+    v-for="page in lastPage"
+    :key="page"
+    class="page-btn"
+    :class="{ active: page === currentPage }"
+    @click="fetchBranches(page)"
+  >
+    {{ page }}
+  </button>
+
+  <BaseButton
+    variant="ghost"
+    :disabled="currentPage === lastPage"
+    @click="fetchBranches(currentPage + 1)"
+  >
+    Next →
+  </BaseButton>
+</div>
     </div>
 
 </template>
@@ -83,6 +110,10 @@ import BaseInput from '@/components/ui/BaseInput.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import { Plus, MapPin, Phone, Building2 } from 'lucide-vue-next'
 import type { Branch } from '@/types'
+
+
+const currentPage = ref(1)
+const lastPage = ref(1)
 
 const router = useRouter()
 
@@ -133,16 +164,13 @@ const handleSubmit = async () => {
   
 }
 
-const fetchBranches = async () => {
+const fetchBranches = async (page = 1) => {
   isLoading.value = true
   try {
-    console.log('🚀 Fetching branches...')
-    const response = await branchesApi.getBranches()
-    console.log('✅ Raw response:', response)
-    console.log('✅ response.data:', response.data)
-    // Попробуем оба варианта
-    branches.value = response.data?.data || response.data || []
-    console.log('✅ branches set to:', branches.value)
+    const response = await branchesApi.getBranches({ page })
+    branches.value = response.data.data
+    currentPage.value = response.data.meta.current_page
+    lastPage.value = response.data.meta.last_page
   } catch (error) {
     console.error('❌ Error fetching branches:', error)
     branches.value = []
@@ -151,7 +179,7 @@ const fetchBranches = async () => {
   }
 }
 onMounted(() => {
-  fetchBranches()
+  fetchBranches(1)
 })
 </script>
 
@@ -233,5 +261,35 @@ onMounted(() => {
   gap: var(--space-md);
   justify-content: flex-end;
   margin-top: var(--space-lg);
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+}
+
+.page-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  cursor: pointer;
+  font-size: var(--font-sm);
+  color: var(--color-neutral-900);
+  transition: var(--transition);
+}
+
+.page-btn.active {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.page-btn:hover:not(.active) {
+  border-color: var(--color-primary);
 }
 </style>
