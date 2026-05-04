@@ -1,8 +1,8 @@
 import client from './client'
 import type { Department } from '@/types'
 
-export const getDepartments = async (branchId: number) => {
-  const response = await client.get(`/branches/${branchId}/departments`)
+export const getDepartments = async (branchId: number, params?: { page?: number }) => {
+  const response = await client.get(`/branches/${branchId}/departments`, { params })
   console.log('📡 getDepartments raw:', response.data)
   return response
 }

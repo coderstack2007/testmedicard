@@ -54,6 +54,33 @@
             <p>No departments found</p>
           </div>
         </template>
+        <div v-if="lastDeptPage > 1" class="pagination">
+  <BaseButton
+    variant="ghost"
+    :disabled="currentDeptPage === 1"
+    @click="fetchDepartments(currentDeptPage - 1)"
+  >
+    ← Prev
+  </BaseButton>
+
+  <button
+    v-for="page in lastDeptPage"
+    :key="page"
+    class="page-btn"
+    :class="{ active: page === currentDeptPage }"
+    @click="fetchDepartments(page)"
+  >
+    {{ page }}
+  </button>
+
+  <BaseButton
+    variant="ghost"
+    :disabled="currentDeptPage === lastDeptPage"
+    @click="fetchDepartments(currentDeptPage + 1)"
+  >
+    Next →
+  </BaseButton>
+</div> 
       </div>
   <div class="actions" v-if="canManage">
         <BaseButton variant="danger" @click="confirmDelete">
@@ -133,6 +160,11 @@ const showModal = ref(false)
 const isSubmitting = ref(false)
 const formError = ref('')
 
+const currentDeptPage = ref(1)
+const lastDeptPage = ref(1)
+
+
+
 const formData = ref({
   name: '',
   description: '',
@@ -170,11 +202,13 @@ const handleSubmit = async () => {
   }
 }
 
-const fetchDepartments = async () => {
+const fetchDepartments = async (page = 1) => {
   isDeptLoading.value = true
   try {
-    const response = await departmentsApi.getDepartments(branchId)
+    const response = await departmentsApi.getDepartments(branchId, { page })
     departments.value = response.data?.data || response.data || []
+    currentDeptPage.value = response.data?.meta?.current_page ?? 1
+    lastDeptPage.value = response.data?.meta?.last_page ?? 1
   } catch (error) {
     console.error('❌ Error fetching departments:', error)
     departments.value = []
@@ -366,5 +400,36 @@ onMounted(async () => {
   padding: var(--space-md);
   font-size: var(--font-sm);
   color: #991b1b;
+}
+
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+}
+
+.page-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  cursor: pointer;
+  font-size: var(--font-sm);
+  color: var(--color-neutral-900);
+  transition: var(--transition);
+}
+
+.page-btn.active {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.page-btn:hover:not(.active) {
+  border-color: var(--color-primary);
 }
 </style> 
