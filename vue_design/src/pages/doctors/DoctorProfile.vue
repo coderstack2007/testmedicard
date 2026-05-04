@@ -1,8 +1,8 @@
 <template>
   <div class="page-container">
-    <router-link to="/departments/${doctor?.department_id}" class="back-link">
-      <ChevronLeft :size="18" /> Back to Department
-    </router-link>
+    <router-link :to="`/departments/${doctor?.department_id}`" class="back-link">
+    <ChevronLeft :size="18" /> Back to Department
+  </router-link>
 
     <LoadingSpinner v-if="isLoading" message="Loading doctor..." />
 
