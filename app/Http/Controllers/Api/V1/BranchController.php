@@ -19,7 +19,7 @@ class BranchController
             ->when(!$request->user()->isAdmin(), function ($query) {
                 return $query->where('id', $this->userBranchId());
             })
-            ->paginate(6);
+            ->paginate(8);
 
         return BranchResource::collection($branches);
     }

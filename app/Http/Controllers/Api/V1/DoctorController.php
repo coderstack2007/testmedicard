@@ -20,7 +20,7 @@ class DoctorController
 
         $doctors = DoctorProfile::where('branch_id', $branchId)
             ->with('user', 'branch', 'department')
-            ->paginate(20);
+            ->paginate(8);
 
         return DoctorProfileResource::collection($doctors);
     }

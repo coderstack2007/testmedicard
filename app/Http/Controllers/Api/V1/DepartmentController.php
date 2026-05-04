@@ -19,7 +19,7 @@ class DepartmentController
 
         $departments = Department::where('branch_id', $branchId)
             ->with('branch')
-            ->paginate(20);
+            ->paginate(8);
 
         return DepartmentResource::collection($departments);
     }
