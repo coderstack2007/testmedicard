@@ -54,15 +54,15 @@ class DepartmentController
         return response()->json(new DepartmentResource($department));
     }
 
-    public function destroy(Request $request, int $id)
+public function destroy(Request $request, int $id)
 {
-    $department = Department::withCount('doctors')->findOrFail($id);
+    $department = Department::withCount('doctorProfiles')->findOrFail($id);
     $this->assertBranchAccess($department->branch_id);
-    
-    if ($department->doctors_count > 0) {
+
+    if ($department->doctor_profiles_count > 0) {
         return response()->json(['message' => 'Cannot delete: department has doctors'], 422);
     }
-    
+
     $department->delete();
     return response()->json(['message' => 'Department deleted']);
 }

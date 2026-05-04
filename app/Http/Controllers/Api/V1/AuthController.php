@@ -10,6 +10,7 @@ use App\Models\PatientProfile;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController
 {
@@ -55,7 +56,7 @@ class AuthController
 
         $user = User::where('email', $credentials['email'])->first();
 
-        if (!$user || !password_verify($credentials['password'], $user->password)) {
+        if (!$user || !Hash::check($credentials['password'], $user->password)) {
             return response()->json(['error' => 'Invalid credentials'], 401);
         }
 
