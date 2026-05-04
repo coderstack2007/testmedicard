@@ -108,7 +108,33 @@
         </div>
       </form>
     </BaseModal>
+<div v-if="lastPage > 1" class="pagination">
+  <BaseButton
+    variant="ghost"
+    :disabled="currentPage === 1"
+    @click="fetchDoctors(currentPage - 1)"
+  >
+    ← Prev
+  </BaseButton>
 
+  <button
+    v-for="page in lastPage"
+    :key="page"
+    class="page-btn"
+    :class="{ active: page === currentPage }"
+    @click="fetchDoctors(page)"
+  >
+    {{ page }}
+  </button>
+
+  <BaseButton
+    variant="ghost"
+    :disabled="currentPage === lastPage"
+    @click="fetchDoctors(currentPage + 1)"
+  >
+    Next →
+  </BaseButton>
+</div>
     <!-- Create Doctor Modal -->
     <BaseModal v-if="showDoctorModal" :open="showDoctorModal" @close="showDoctorModal = false" title="Add Doctor">
       <form @submit.prevent="handleCreateDoctor" class="modal-form">
@@ -181,6 +207,8 @@ const doctorForm        = ref({ name: '', email: '', password: '', specializatio
 const showDeleteModal = ref(false)
 const deleteError = ref('')
 
+const currentPage = ref(1)
+const lastPage = ref(1)
 // Search filters only within this department's doctors
 const filteredDoctors = computed(() => {
   if (!searchQuery.value.trim()) return doctors.value
@@ -290,14 +318,13 @@ const handleCreateDoctor = async () => {
 }
 
 // ── Fetch ─────────────────────────────────────────────
-const fetchDoctors = async () => {
-  if (!department.value?.branch_id) return
+const fetchDoctors = async (page = 1) => {
   isDoctorsLoading.value = true
   try {
-    const response = await doctorsApi.getDoctors(department.value.branch_id)
-    const all: any[] = response.data?.data || response.data || []
-    // Only doctors belonging to this specific department
-    doctors.value = all.filter(d => d.department_id === deptId)
+    const response = await doctorsApi.getDoctors(department.value!.branch_id, { page })
+    doctors.value = response.data?.data || response.data || []
+    currentPage.value = response.data?.meta?.current_page ?? 1
+    lastPage.value = response.data?.meta?.last_page ?? 1
   } catch (error) {
     console.error('❌ Error fetching doctors:', error)
     doctors.value = []
@@ -305,6 +332,7 @@ const fetchDoctors = async () => {
     isDoctorsLoading.value = false
   }
 }
+
 
 onMounted(async () => {
   try {
@@ -409,5 +437,35 @@ onMounted(async () => {
   background: #fee2e2; border: 1px solid #fecaca;
   border-radius: var(--radius-btn); padding: var(--space-md);
   font-size: var(--font-sm); color: #991b1b;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+}
+
+.page-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  cursor: pointer;
+  font-size: var(--font-sm);
+  color: var(--color-neutral-900);
+  transition: var(--transition);
+}
+
+.page-btn.active {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.page-btn:hover:not(.active) {
+  border-color: var(--color-primary);
 }
 </style>

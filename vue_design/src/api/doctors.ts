@@ -1,10 +1,9 @@
 import client from './client'
 
-export const getDoctors = async (branchId: number) => {
-  const response = await client.get(`/branches/${branchId}/doctors`)
+export const getDoctors = async (branchId: number, params?: { page?: number }) => {
+  const response = await client.get(`/branches/${branchId}/doctors`, { params })
   return response
 }
-
 export const createDoctor = async (data: {
   user_id: number
   branch_id: number | string
