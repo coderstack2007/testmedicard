@@ -72,10 +72,7 @@
           </div>
         </div>
       </BaseModal>
-        <div v-else class="not-found">
-          <AlertCircle :size="48" />
-          <p>Branch not found</p>
-        </div>
+  
     </div>
 
     <!-- Create Department Modal -->
@@ -370,4 +367,4 @@ onMounted(async () => {
   font-size: var(--font-sm);
   color: #991b1b;
 }
-</style>
+</style> 

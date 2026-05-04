@@ -1,5 +1,5 @@
 <template>
-  <AppLayout>
+
     <div class="page-container">
       <div class="page-header">
         <h1>Doctors</h1>
@@ -97,7 +97,7 @@
 
       </form>
     </BaseModal>
-  </AppLayout>
+
 </template>
 
 <script setup lang="ts">
@@ -107,7 +107,7 @@ import * as branchesApi from '@/api/branches'
 import * as departmentsApi from '@/api/departments'
 import * as authApi from '@/api/auth'
 
-import AppLayout from '@/components/layout/AppLayout.vue'
+
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
