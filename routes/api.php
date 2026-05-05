@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\MessageController;
 use App\Http\Controllers\Api\V1\PatientController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\UserController;
+use App\Http\Controllers\Api\V1\SpecializationController;
 Route::prefix('v1')->group(function () {
 
     // Public auth routes
@@ -75,6 +76,10 @@ Route::prefix('v1')->group(function () {
         Route::get('dashboard', [DashboardController::class, 'index']);
         Route::post('users', [UserController::class, 'store'])
             ->middleware('role:moderator,absolute_admin');
+    
+        // Additional routes for user management, specializations, etc. can be added here
+        Route::get('/specializations', [SpecializationController::class, 'index']);
     });
+    
 });
 
