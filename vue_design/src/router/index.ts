@@ -47,6 +47,10 @@ const routes = [
         component: () => import('@/pages/doctors/DoctorProfile.vue'),
       },
       {
+      path: 'departments/:id/doctors',
+        component: () => import('@/pages/doctors/DoctorListPage.vue'),
+      },
+      {
         path: 'patients',
         component: () => import('@/pages/patients/PatientListPage.vue'),
         meta: { roles: ['moderator', 'absolute_admin'] }

@@ -1,26 +1,43 @@
 <template>
+  <div class="page-container">
+    <div class="page-header">
+      <h1>Doctors</h1>
+      <BaseButton variant="primary" @click="openCreate">
+        <Plus :size="18" />
+        Add Doctor
+      </BaseButton>
+    </div>
 
-    <div class="page-container">
-      <div class="page-header">
-        <h1>Doctors</h1>
-        <BaseButton variant="primary" @click="openCreate">
-          <Plus :size="18" />
-          Add Doctor
-        </BaseButton>
+    <!-- Статичная хлебная крошка -->
+    <div class="branch-breadcrumb" v-if="department">
+      <span>🏥 {{ department.branch?.name }}</span>
+      <span class="sep">›</span>
+      <span>🏬 {{ department.name }}</span>
+    </div>
+
+    <div class="filters">
+      <div class="search-bar">
+        <Search :size="16" class="search-icon" />
+        <input v-model="searchQuery" type="text" class="search-input" placeholder="Search by name..." />
+        <button v-if="searchQuery" class="search-clear" @click="searchQuery = ''">
+          <X :size="14" />
+        </button>
       </div>
+      <select v-model="selectedSpecialization" class="filter-select">
+        <option value="">All Specializations</option>
+        <option v-for="s in specializationsList" :key="s" :value="s">{{ s }}</option>
+      </select>
+    </div>
 
-      <!-- Filter by branch -->
-      <div class="filters">
-        <select v-model="selectedBranchId" class="filter-select" @change="onBranchChange">
-          <option :value="null">All Branches</option>
-          <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
-        </select>
-      </div>
-
-      <LoadingSpinner v-if="isLoading" message="Loading doctors..." />
-
-      <div v-else-if="doctors.length > 0" class="doctors-grid">
-        <div v-for="doctor in doctors" :key="doctor.id" class="doctor-card">
+    <LoadingSpinner v-if="isLoading" message="Loading doctors..." />
+    <template v-else>
+      <div v-if="filteredDoctors.length > 0" class="doctors-grid">
+        <div
+          v-for="doctor in filteredDoctors"
+          :key="doctor.id"
+          class="doctor-card"
+          @click="router.push(`/doctors/${doctor.id}`)"
+        >
           <div class="doctor-avatar">{{ initials(doctor.user?.name) }}</div>
           <div class="doctor-info">
             <h3>{{ doctor.user?.name }}</h3>
@@ -30,122 +47,130 @@
           </div>
         </div>
       </div>
-
       <div v-else class="empty-state">
         <Stethoscope :size="48" />
         <p>No doctors found</p>
-        <span v-if="selectedBranchId">Try selecting a different branch</span>
       </div>
-    </div>
 
-    <!-- Create Doctor Modal -->
-    <BaseModal v-if="showModal" :open="showModal" @close="closeModal" title="Add New Doctor">
-      <form @submit.prevent="handleSubmit" class="modal-form">
+      <div v-if="lastPage > 1" class="pagination">
+        <BaseButton variant="ghost" :disabled="currentPage === 1" @click="fetchDoctors(currentPage - 1)">← Prev</BaseButton>
+        <button
+          v-for="page in lastPage"
+          :key="page"
+          class="page-btn"
+          :class="{ active: page === currentPage }"
+          @click="fetchDoctors(page)"
+        >{{ page }}</button>
+        <BaseButton variant="ghost" :disabled="currentPage === lastPage" @click="fetchDoctors(currentPage + 1)">Next →</BaseButton>
+      </div>
+    </template>
+  </div>
 
-        <!-- Step indicator -->
-        <div class="steps">
-          <div :class="['step', { active: step === 1, done: step > 1 }]">
-            <span class="step-num">1</span> Account
-          </div>
-          <div class="step-line" />
-          <div :class="['step', { active: step === 2 }]">
-            <span class="step-num">2</span> Profile
-          </div>
+  <BaseModal v-if="showModal" :open="showModal" @close="closeModal" title="Add New Doctor">
+    <form @submit.prevent="handleSubmit" class="modal-form">
+      <BaseInput v-model="formData.name" label="Full Name" placeholder="Dr. John Smith" required />
+      <BaseInput v-model="formData.email" type="email" label="Email" placeholder="doctor@medicard.uz" required />
+      <BaseInput v-model="formData.password" type="password" label="Password" placeholder="••••••••" required />
+
+      <div class="form-group">
+        <label class="form-label">Branch & Department</label>
+        <div class="static-location">
+          <span>🏥 {{ department?.branch?.name }}</span>
+
         </div>
+      </div>
+      <div class="form-group">
 
-        <!-- Step 1: Create user account -->
-        <template v-if="step === 1">
-          <BaseInput v-model="formData.name" label="Full Name" placeholder="Dr. John Smith" required />
-          <BaseInput v-model="formData.email" type="email" label="Email" placeholder="doctor@medicard.uz" required />
-          <BaseInput v-model="formData.password" type="password" label="Password" placeholder="••••••••" required />
-          <div v-if="stepError" class="error-box">{{ stepError }}</div>
-          <div class="modal-actions">
-            <BaseButton type="button" variant="ghost" @click="closeModal">Cancel</BaseButton>
-            <BaseButton type="button" variant="primary" :loading="isSubmitting" @click="goToStep2">
-              Next →
-            </BaseButton>
-          </div>
-        </template>
+        <div class="static-location">
 
-        <!-- Step 2: Doctor profile -->
-        <template v-if="step === 2">
-          <div class="form-group">
-            <label class="form-label">Branch <span class="required">*</span></label>
-            <select v-model="formData.branch_id" class="form-select" required @change="onFormBranchChange">
-              <option value="">Select branch</option>
-              <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
-            </select>
-          </div>
 
-          <div class="form-group">
-            <label class="form-label">Department <span class="required">*</span></label>
-            <select v-model="formData.department_id" class="form-select" required :disabled="!formData.branch_id">
-              <option value="">{{ formData.branch_id ? 'Select department' : 'Select branch first' }}</option>
-              <option v-for="d in filteredDepartments" :key="d.id" :value="d.id">{{ d.name }}</option>
-            </select>
-          </div>
+          <span>🏬 {{ department?.name }}</span>
+        </div>
+      </div>
 
-          <BaseInput v-model="formData.specialization" label="Specialization" placeholder="Cardiology" />
-          <BaseInput v-model="formData.phone" label="Phone" placeholder="+998901234567" />
+      <div class="form-group">
+        <label class="form-label">Specialization</label>
+        <select v-model="formData.specialization" class="form-select">
+          <option value="">Select specialization</option>
+          <option v-for="s in specializationsList" :key="s" :value="s">{{ s }}</option>
+        </select>
+      </div>
 
-          <div v-if="stepError" class="error-box">{{ stepError }}</div>
-          <div class="modal-actions">
-            <BaseButton type="button" variant="ghost" @click="step = 1">← Back</BaseButton>
-            <BaseButton type="submit" variant="primary" :loading="isSubmitting">Create Doctor</BaseButton>
-          </div>
-        </template>
+      <BaseInput v-model="formData.phone" label="Phone" placeholder="+998901234567" />
 
-      </form>
-    </BaseModal>
-
+      <div v-if="formError" class="error-box">{{ formError }}</div>
+      <div class="modal-actions">
+        <BaseButton type="button" variant="ghost" @click="closeModal">Cancel</BaseButton>
+        <BaseButton type="submit" variant="primary" :loading="isSubmitting">Create Doctor</BaseButton>
+      </div>
+    </form>
+  </BaseModal>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import * as doctorsApi from '@/api/doctors'
-import * as branchesApi from '@/api/branches'
 import * as departmentsApi from '@/api/departments'
 import * as authApi from '@/api/auth'
-
-
+import * as specializationsApi from '@/api/specializations'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
-import { Plus, Stethoscope } from 'lucide-vue-next'
-import type { Branch, Department } from '@/types'
+import { Plus, Stethoscope, Search, X } from 'lucide-vue-next'
+import * as specializationsApi from '@/api/specializations'
 
-// ── State ────────────────────────────────────────────
-const doctors = ref<any[]>([])
-const branches = ref<Branch[]>([])
-const allDepartments = ref<Department[]>([])
-const selectedBranchId = ref<number | null>(null)
+const specializationsList = ref<string[]>([])
 
-const isLoading = ref(false)
-const showModal = ref(false)
+onMounted(async () => {
+  try {
+    const [doctorData, specsData] = await Promise.all([
+      doctorsApi.getDoctor(doctorId),
+      specializationsApi.getSpecializations()
+    ])
+    doctor.value = doctorData
+    specializationsList.value = specsData.data // ← .data так как в getSpecializations нет .data
+  } catch (error) {
+    console.error('❌ Error fetching:', error)
+  } finally {
+    isLoading.value = false
+  }
+})
+const router = useRouter()
+const route  = useRoute()
+
+const departmentId = Number(route.params.id)
+
+// ── State ─────────────────────────────────────────────
+const doctors             = ref<any[]>([])
+const department          = ref<any>(null)
+const specializationsList = ref<string[]>([])
+const selectedSpecialization = ref('')
+const searchQuery            = ref('')
+const currentPage  = ref(1)
+const lastPage     = ref(1)
+const isLoading    = ref(false)
+const showModal    = ref(false)
 const isSubmitting = ref(false)
-const step = ref(1)
-const stepError = ref('')
-const createdUserId = ref<number | null>(null)
+const formError    = ref('')
 
 const formData = ref({
-  // Step 1
-  name: '',
-  email: '',
-  password: '',
-  // Step 2
-  branch_id: '' as number | '',
-  department_id: '' as number | '',
-  specialization: '',
-  phone: '',
+  name: '', email: '', password: '', specialization: '', phone: '',
 })
 
-// ── Computed ─────────────────────────────────────────
-const filteredDepartments = computed(() =>
-  formData.value.branch_id
-    ? allDepartments.value.filter(d => d.branch_id === formData.value.branch_id)
-    : []
-)
+// ── Computed ──────────────────────────────────────────
+const filteredDoctors = computed(() => {
+  let list = doctors.value
+  if (searchQuery.value.trim()) {
+    const q = searchQuery.value.toLowerCase()
+    list = list.filter(d => d.user?.name?.toLowerCase().includes(q))
+  }
+  if (selectedSpecialization.value) {
+    list = list.filter(d => d.specialization === selectedSpecialization.value)
+  }
+  return list
+})
 
 // ── Helpers ───────────────────────────────────────────
 const initials = (name?: string) =>
@@ -153,125 +178,76 @@ const initials = (name?: string) =>
 
 // ── Actions ───────────────────────────────────────────
 const openCreate = () => {
-  step.value = 1
-  stepError.value = ''
-  createdUserId.value = null
-  formData.value = { name: '', email: '', password: '', branch_id: '', department_id: '', specialization: '', phone: '' }
+  formError.value = ''
+  formData.value = { name: '', email: '', password: '', specialization: '', phone: '' }
   showModal.value = true
 }
+const closeModal = () => { showModal.value = false }
 
-const closeModal = () => {
-  showModal.value = false
-}
-
-const onFormBranchChange = () => {
-  formData.value.department_id = ''
-  if (formData.value.branch_id) {
-    loadDepartmentsForBranch(formData.value.branch_id as number)
-  }
-}
-
-const loadDepartmentsForBranch = async (branchId: number) => {
-  try {
-    const response = await departmentsApi.getDepartments(branchId)
-    const depts: Department[] = response.data?.data || response.data || []
-    // merge into allDepartments without duplicates
-    depts.forEach(d => {
-      if (!allDepartments.value.find(x => x.id === d.id)) {
-        allDepartments.value.push(d)
-      }
-    })
-  } catch (e) {
-    console.error('Failed to load departments', e)
-  }
-}
-
-const goToStep2 = async () => {
-  stepError.value = ''
+const handleSubmit = async () => {
+  formError.value = ''
   if (!formData.value.name.trim() || !formData.value.email.trim() || !formData.value.password) {
-    stepError.value = 'All fields are required'
-    return
+    formError.value = 'Name, email and password are required'; return
   }
   if (formData.value.password.length < 6) {
-    stepError.value = 'Password must be at least 6 characters'
-    return
+    formError.value = 'Password must be at least 6 characters'; return
   }
 
   isSubmitting.value = true
   try {
-    // Register new user with doctor role
-    const response = await authApi.register({
+    const userResponse = await authApi.register({
       name: formData.value.name,
       email: formData.value.email,
       password: formData.value.password,
       password_confirmation: formData.value.password,
       role: 'doctor',
     })
-    console.log('✅ User created:', response)
-    createdUserId.value = response?.user?.id ?? response?.id
-    step.value = 2
-  } catch (error: any) {
-    console.error('❌ Register error:', error.response?.data)
-    stepError.value =
-      error.response?.data?.message ||
-      error.response?.data?.errors?.email?.[0] ||
-      error.message ||
-      'Error creating user account'
-  } finally {
-    isSubmitting.value = false
-  }
-}
 
-const handleSubmit = async () => {
-  stepError.value = ''
-  if (!formData.value.branch_id || !formData.value.department_id) {
-    stepError.value = 'Branch and Department are required'
-    return
-  }
-  if (!createdUserId.value) {
-    stepError.value = 'User account not created'
-    return
-  }
+    const userId = userResponse?.user?.id ?? userResponse?.id
 
-  isSubmitting.value = true
-  try {
-    const payload = {
-      user_id: createdUserId.value,
-      branch_id: formData.value.branch_id,
-      department_id: formData.value.department_id,
+    await doctorsApi.createDoctor({
+      user_id:        userId,
+      branch_id:      department.value?.branch?.id,
+      department_id:  departmentId,
       specialization: formData.value.specialization || undefined,
-      phone: formData.value.phone || undefined,
-    }
-    console.log('🚀 Creating doctor profile:', payload)
-    const result = await doctorsApi.createDoctor(payload)
-    console.log('✅ Doctor created:', result)
+      phone:          formData.value.phone || undefined,
+    })
+
     closeModal()
     await fetchDoctors()
   } catch (error: any) {
-    console.error('❌ Doctor create error:', error.response?.data)
-    stepError.value =
+    formError.value =
+      error.response?.data?.errors?.email?.[0] ||
       error.response?.data?.message ||
-      error.response?.data?.error ||
-      error.message ||
-      'Error creating doctor profile'
+      error.message || 'Error creating doctor'
   } finally {
     isSubmitting.value = false
   }
 }
 
-const onBranchChange = () => {
-  fetchDoctors()
+// ── Fetch ─────────────────────────────────────────────
+const fetchDepartment = async () => {
+  try {
+    // getDepartment уже возвращает data.data напрямую
+    department.value = await departmentsApi.getDepartment(departmentId)
+    console.log('✅ department loaded:', department.value)
+  } catch (e) {
+    console.error('Failed to load department', e)
+  }
 }
 
-const fetchDoctors = async () => {
-  if (!selectedBranchId.value) {
-    doctors.value = []
+const fetchDoctors = async (page = 1) => {
+  const branchId = department.value?.branch_id ?? department.value?.branch?.id
+  if (!branchId) {
+    console.warn('No branchId available yet')
     return
   }
   isLoading.value = true
   try {
-    const response = await doctorsApi.getDoctors(selectedBranchId.value)
-    doctors.value = response.data?.data || response.data || []
+    const response = await doctorsApi.getDoctors(branchId, { page })
+    doctors.value     = response.data?.data || response.data || []
+    currentPage.value = response.data?.meta?.current_page ?? 1
+    lastPage.value    = response.data?.meta?.last_page ?? 1
   } catch (error) {
     console.error('❌ Error fetching doctors:', error)
     doctors.value = []
@@ -280,51 +256,45 @@ const fetchDoctors = async () => {
   }
 }
 
-const fetchBranches = async () => {
+const fetchSpecializations = async () => {
   try {
-    const response = await branchesApi.getBranches()
-    branches.value = response.data?.data || response.data || []
-    // auto-select first branch
-    if (branches.value.length > 0) {
-      selectedBranchId.value = branches.value[0].id
-      await fetchDoctors()
-    }
-  } catch (error) {
-    console.error('❌ Error fetching branches:', error)
+    const response = await specializationsApi.getSpecializations()
+    specializationsList.value = (response.data || []).map((s: any) => s.name)
+  } catch (e) {
+    console.error('Failed to load specializations', e)
   }
 }
 
-onMounted(() => {
-  fetchBranches()
+onMounted(async () => {
+  await fetchDepartment()  // ждём — нам нужен branch_id
+  await fetchDoctors()
+  fetchSpecializations()
+  
 })
+
 </script>
 
 <style scoped>
-.page-container {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xl);
-}
+.page-container { display: flex; flex-direction: column; gap: var(--space-xl); }
+.page-header { display: flex; justify-content: space-between; align-items: center; }
+.page-header h1 { font-size: var(--font-2xl); font-weight: 600; margin: 0; }
 
-.page-header {
+.branch-breadcrumb {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 8px;
+  font-size: var(--font-sm);
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-btn);
+  padding: 8px 14px;
+  width: fit-content;
 }
+.branch-breadcrumb .sep { color: var(--color-neutral-400); }
 
-.page-header h1 {
-  font-size: var(--font-2xl);
-  font-weight: 600;
-  margin: 0;
-}
-
-.filters {
-  display: flex;
-  gap: var(--space-md);
-}
-
-.filter-select,
-.form-select {
+.filters { display: flex; gap: var(--space-md); align-items: center; flex-wrap: wrap; }
+.filter-select {
   padding: 8px 12px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-btn);
@@ -333,186 +303,76 @@ onMounted(() => {
   font-size: 14px;
   font-family: var(--font-main);
   cursor: pointer;
-  min-width: 200px;
+  min-width: 180px;
 }
+.filter-select:focus { outline: none; border-color: var(--color-primary); }
 
-.filter-select:focus,
-.form-select:focus {
-  outline: none;
-  border-color: var(--color-primary);
+.search-bar {
+  display: flex; align-items: center; flex: 1; min-width: 200px;
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: var(--radius-btn); padding: 0 12px; gap: var(--space-sm); transition: var(--transition);
 }
-
-.form-select:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.search-bar:focus-within { border-color: var(--color-primary); }
+.search-icon { color: var(--color-text-muted); flex-shrink: 0; }
+.search-input {
+  flex: 1; border: none; outline: none; background: transparent;
+  color: var(--color-text); font-size: 14px; font-family: var(--font-main); padding: 8px 0;
 }
+.search-input::placeholder { color: var(--color-text-muted); }
+.search-clear { background: none; border: none; cursor: pointer; color: var(--color-text-muted); display: flex; align-items: center; padding: 0; }
+.search-clear:hover { color: var(--color-danger); }
 
-.doctors-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: var(--space-lg);
-}
-
+.doctors-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--space-lg); }
 .doctor-card {
-  display: flex;
-  gap: var(--space-md);
-  padding: var(--space-lg);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
-  transition: var(--transition);
+  display: flex; gap: var(--space-md); padding: var(--space-lg);
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: var(--radius-card); transition: var(--transition); cursor: pointer;
 }
-
-.doctor-card:hover {
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-card);
-}
-
+.doctor-card:hover { border-color: var(--color-primary); box-shadow: var(--shadow-card); }
 .doctor-avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: var(--color-primary);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 16px;
-  flex-shrink: 0;
+  width: 48px; height: 48px; border-radius: 50%; background: var(--color-primary);
+  color: white; display: flex; align-items: center; justify-content: center;
+  font-weight: 600; font-size: 16px; flex-shrink: 0;
 }
+.doctor-info { display: flex; flex-direction: column; gap: 2px; }
+.doctor-info h3 { margin: 0; font-size: var(--font-base); font-weight: 600; }
+.specialization { font-size: var(--font-sm); color: var(--color-primary); margin: 0; font-weight: 500; }
+.meta { font-size: var(--font-xs); color: var(--color-text-muted); margin: 0; }
+.phone { font-size: var(--font-xs); color: var(--color-text-muted); margin: 0; }
 
-.doctor-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.empty-state { text-align: center; padding: var(--space-4xl) var(--space-2xl); color: var(--color-neutral-500); }
+.empty-state svg { margin-bottom: var(--space-md); opacity: 0.5; }
+
+.pagination { display: flex; align-items: center; justify-content: center; gap: var(--space-sm); margin-top: var(--space-lg); }
+.page-btn {
+  width: 36px; height: 36px; border-radius: var(--radius-btn); border: 1px solid var(--color-border);
+  background: var(--color-surface); cursor: pointer; font-size: var(--font-sm);
+  color: var(--color-neutral-900); transition: var(--transition);
 }
+.page-btn.active { background: var(--color-primary); color: white; border-color: var(--color-primary); }
+.page-btn:hover:not(.active) { border-color: var(--color-primary); }
 
-.doctor-info h3 {
-  margin: 0;
-  font-size: var(--font-base);
-  font-weight: 600;
+.modal-form { display: flex; flex-direction: column; gap: var(--space-lg); padding: var(--space-lg) 0; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-label { font-size: 14px; font-weight: 500; color: var(--color-text); }
+.form-select {
+  padding: 8px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-btn);
+  background: var(--color-surface); color: var(--color-text); font-size: 14px; font-family: var(--font-main); cursor: pointer;
 }
+.form-select:focus { outline: none; border-color: var(--color-primary); }
 
-.specialization {
-  font-size: var(--font-sm);
-  color: var(--color-primary);
-  margin: 0;
-  font-weight: 500;
+.static-location {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; background: var(--color-bg);
+  border: 1px solid var(--color-border); border-radius: var(--radius-btn);
+  font-size: 14px; color: var(--color-text-muted);
 }
+.static-location .sep { color: var(--color-neutral-400); }
 
-.meta {
-  font-size: var(--font-xs);
-  color: var(--color-text-muted);
-  margin: 0;
-}
-
-.phone {
-  font-size: var(--font-xs);
-  color: var(--color-text-muted);
-  margin: 0;
-}
-
-.empty-state {
-  text-align: center;
-  padding: var(--space-4xl) var(--space-2xl);
-  color: var(--color-neutral-500);
-}
-
-.empty-state svg {
-  margin-bottom: var(--space-md);
-  opacity: 0.5;
-}
-
-/* Modal */
-.modal-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-lg);
-  padding: var(--space-lg) 0;
-}
-
-.steps {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  margin-bottom: var(--space-md);
-}
-
-.step {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-  font-size: var(--font-sm);
-  color: var(--color-text-muted);
-  font-weight: 500;
-}
-
-.step.active {
-  color: var(--color-primary);
-}
-
-.step.done {
-  color: var(--color-success);
-}
-
-.step-num {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--color-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.step.active .step-num {
-  background: var(--color-primary);
-  color: white;
-}
-
-.step.done .step-num {
-  background: var(--color-success);
-  color: white;
-}
-
-.step-line {
-  flex: 1;
-  height: 1px;
-  background: var(--color-border);
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.form-label {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text);
-}
-
-.required {
-  color: var(--color-danger);
-}
-
-.modal-actions {
-  display: flex;
-  gap: var(--space-md);
-  justify-content: flex-end;
-  margin-top: var(--space-lg);
-}
-
+.modal-actions { display: flex; gap: var(--space-md); justify-content: flex-end; margin-top: var(--space-lg); }
 .error-box {
-  background: #fee2e2;
-  border: 1px solid #fecaca;
-  border-radius: var(--radius-btn);
-  padding: var(--space-md);
-  font-size: var(--font-sm);
-  color: #991b1b;
+  background: #fee2e2; border: 1px solid #fecaca;
+  border-radius: var(--radius-btn); padding: var(--space-md);
+  font-size: var(--font-sm); color: #991b1b;
 }
 </style>
