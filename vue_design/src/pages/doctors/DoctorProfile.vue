@@ -30,6 +30,10 @@
             <span class="value">{{ doctor.branch?.name || '—' }}</span>
           </div>
           <div class="info-item">
+            <span class="label">Specialization</span>
+            <span class="value">{{ doctor.specialization || '—' }}</span>
+          </div>
+          <div class="info-item">
             <span class="label">Department</span>
             <span class="value">{{ doctor.department?.name || '—' }}</span>
           </div>
@@ -55,7 +59,13 @@
   <!-- Edit Modal -->
   <BaseModal v-if="showEditModal" :open="showEditModal" @close="showEditModal = false" title="Edit Doctor">
     <form @submit.prevent="handleUpdate" class="modal-form">
-      <BaseInput v-model="editForm.specialization" label="Specialization" placeholder="Cardiology" />
+        <div class="form-group">
+          <label class="form-label">Specialization</label>
+          <select v-model="editForm.specialization" class="form-select">
+            <option value="">Select specialization</option>
+            <option v-for="s in specializationsList" :key="s" :value="s">{{ s }}</option>
+          </select>
+        </div>  
       <BaseInput v-model="editForm.phone" label="Phone" placeholder="+998901234567" />
       <div v-if="editError" class="error-box">{{ editError }}</div>
       <div class="modal-actions">
@@ -83,12 +93,15 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import * as doctorsApi from '@/api/doctors'
 
+import * as specializationsApi from '@/api/specializations'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import { ChevronLeft, AlertCircle, Pencil, Trash2 } from 'lucide-vue-next'
+
+const specializationsList = ref<string[]>([])
 
 const route    = useRoute()
 const router   = useRouter()
@@ -142,11 +155,17 @@ const handleDelete = async () => {
   }
 }
 
+
 onMounted(async () => {
   try {
-    doctor.value = await doctorsApi.getDoctor(doctorId)
+    const [doctorData, specsResponse] = await Promise.all([
+      doctorsApi.getDoctor(doctorId),
+      specializationsApi.getSpecializations()
+    ])
+    doctor.value = doctorData
+    specializationsList.value = (specsResponse || []).map((s: any) => s.name)
   } catch (error) {
-    console.error('❌ Error fetching doctor:', error)
+    console.error('❌ Error fetching:', error)
   } finally {
     isLoading.value = false
   }
@@ -194,4 +213,11 @@ onMounted(async () => {
   border-radius: var(--radius-btn); padding: var(--space-md);
   font-size: var(--font-sm); color: #991b1b;
 }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-label { font-size: 14px; font-weight: 500; color: var(--color-text); }
+.form-select {
+  padding: 8px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-btn);
+  background: var(--color-surface); color: var(--color-text); font-size: 14px; font-family: var(--font-main); cursor: pointer;
+}
+.form-select:focus { outline: none; border-color: var(--color-primary); }
 </style>

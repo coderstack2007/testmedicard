@@ -1,11 +1,17 @@
 <template>
+  
   <div class="page-container">
+      <button @click="router.back()" class="back-link">
+        <ChevronLeft :size="18" /> Back to Department
+      </button>
     <div class="page-header">
+      
       <h1>Doctors</h1>
       <BaseButton variant="primary" @click="openCreate">
         <Plus :size="18" />
         Add Doctor
       </BaseButton>
+      
     </div>
 
     <!-- Статичная хлебная крошка -->
@@ -113,30 +119,16 @@ import { useRouter, useRoute } from 'vue-router'
 import * as doctorsApi from '@/api/doctors'
 import * as departmentsApi from '@/api/departments'
 import * as authApi from '@/api/auth'
-import * as specializationsApi from '@/api/specializations'
+
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
-import { Plus, Stethoscope, Search, X } from 'lucide-vue-next'
+import { Plus, Stethoscope, Search, X , ChevronLeft} from 'lucide-vue-next'
 import * as specializationsApi from '@/api/specializations'
 
-const specializationsList = ref<string[]>([])
 
-onMounted(async () => {
-  try {
-    const [doctorData, specsData] = await Promise.all([
-      doctorsApi.getDoctor(doctorId),
-      specializationsApi.getSpecializations()
-    ])
-    doctor.value = doctorData
-    specializationsList.value = specsData.data // ← .data так как в getSpecializations нет .data
-  } catch (error) {
-    console.error('❌ Error fetching:', error)
-  } finally {
-    isLoading.value = false
-  }
-})
+
 const router = useRouter()
 const route  = useRoute()
 
@@ -259,7 +251,7 @@ const fetchDoctors = async (page = 1) => {
 const fetchSpecializations = async () => {
   try {
     const response = await specializationsApi.getSpecializations()
-    specializationsList.value = (response.data || []).map((s: any) => s.name)
+    specializationsList.value = (response || []).map((s: any) => s.name)
   } catch (e) {
     console.error('Failed to load specializations', e)
   }
@@ -375,4 +367,13 @@ onMounted(async () => {
   border-radius: var(--radius-btn); padding: var(--space-md);
   font-size: var(--font-sm); color: #991b1b;
 }
+.back-link {
+  display: inline-flex; align-items: center; gap: var(--space-xs);
+  color: var(--color-primary); text-decoration: none; font-weight: 400; 
+  width: fit-content; font-size: var(--font-sm);
+}
+button {
+  border: none;
+}
+.back-link:hover { color: var(--color-primary); }
 </style>
