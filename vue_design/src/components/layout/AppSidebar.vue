@@ -29,8 +29,10 @@ const props = defineProps({
 
 const navItems = computed<NavItem[]>(() => {
   const baseItems: NavItem[] = [{ label: 'Dashboard', path: '/dashboard', icon: Home }]
+  const roleId = Number(auth.user?.role_id)
 
-  if (auth.isPatient) {
+  // role_id mapping: 1=admin, 2=moderator, 3=doctor, 4=patient
+  if (roleId === 4) {
     return [
       ...baseItems,
       { label: 'My Diagnoses', path: '/diagnoses', icon: BarChart3 },
@@ -38,7 +40,7 @@ const navItems = computed<NavItem[]>(() => {
     ]
   }
 
-  if (auth.isDoctor) {
+  if (roleId === 3) {
     return [
       ...baseItems,
       { label: 'Patients', path: '/patients', icon: Users },
@@ -46,7 +48,7 @@ const navItems = computed<NavItem[]>(() => {
     ]
   }
 
-  if (auth.isModerator) {
+  if (roleId === 2) {
     return [
       ...baseItems,
       { label: 'Doctors', path: '/doctors', icon: Stethoscope },
@@ -55,12 +57,11 @@ const navItems = computed<NavItem[]>(() => {
     ]
   }
 
-  if (auth.isAdmin) {
+  if (roleId === 1) {
     return [
       ...baseItems,
-      { label: 'Branches', path: '/branches', icon: Building2 },
-      { label: 'Doctors', path: '/doctors', icon: Stethoscope },
-      { label: 'Patients', path: '/patients', icon: Users },
+   
+  
     ]
   }
 
@@ -105,7 +106,7 @@ async function handleLogout() {
         </div>
       </div>
       <button class="logout-btn" @click="handleLogout" title="Logout">
-        <LogOut size="20" />
+        <LogOut :size="20" />
       </button>
     </div>
   </aside>

@@ -120,10 +120,11 @@ const stats = reactive({
   apiUsage: 85,
 })
 
-const isPatient = computed(() => authStore.user?.role === 'patient')
-const isDoctor = computed(() => authStore.user?.role === 'doctor')
-const isModerator = computed(() => authStore.user?.role === 'moderator')
-const isAdmin = computed(() => authStore.user?.role === 'absolute_admin')
+// Role checks by numeric role_id (DB): 1=admin, 2=moderator, 3=doctor, 4=patient
+const isAdmin = computed(() => Number(authStore.user?.role_id) === 1)
+const isModerator = computed(() => Number(authStore.user?.role_id) === 2)
+const isDoctor = computed(() => Number(authStore.user?.role_id) === 3)
+const isPatient = computed(() => Number(authStore.user?.role_id) === 4)
 
 const greeting = computed(() => {
   const hour = new Date().getHours()
