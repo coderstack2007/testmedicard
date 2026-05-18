@@ -4,7 +4,8 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-
+use App\Models\User;
+use App\Enums\UserRole;
 class UsersSeeder extends Seeder
 {
     /**
@@ -12,21 +13,21 @@ class UsersSeeder extends Seeder
      */
     public function run(): void
     {
-         // Create test admin user
+        // Create test admin user (role_id = 1)
         User::create([
             'name'     => 'Admin User',
             'email'    => 'admin@medicard.local',
             'password' => bcrypt('password'),
-            'role'     => UserRole::AbsoluteAdmin,
+            'role_id'  => 1,
             'is_active' => true,
         ]);
 
-        // Create test moderator
+        // Create test moderator (role_id = 2)
         User::create([
             'name'     => 'Moderator User',
             'email'    => 'moderator@medicard.local',
             'password' => bcrypt('password'),
-            'role'     => UserRole::Moderator,
+            'role_id'  => 2,
             'is_active' => true,
         ]);
     }
